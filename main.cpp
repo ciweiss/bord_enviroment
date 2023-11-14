@@ -3,15 +3,15 @@
 #include <math.h>
 #include <string>
 // put function declarations here:
-
+int package_count;
 
 void setup() 
 {
 	SimpleFOCDebug::enable();
 	Serial.begin(115200);
-	delay(1000);
+  delay(1000);
   Serial.println("setup");
-
+  package_count=0;
 }
 
 float bit_conversion(byte bits[4]){
@@ -24,30 +24,26 @@ float bit_conversion(byte bits[4]){
   return f;
 }
 void loop() {
-  delay(1000);
-  float temp=0;
-  byte controll[4];
-  byte incomingByte[4];
-   if (Serial.available() > 0) {
-    delay(10000);
-    Serial.readBytes(incomingByte,4);
-    
-    temp=bit_conversion(incomingByte);
-    Serial.print(temp,8);
-    Serial.print("\n");
-    Serial.print("Bytes:\n");
-    for(size_t i=0;i<4;i++){
-      Serial.print(incomingByte[i]);
-      Serial.print("\n");
+  float values[144];
+  byte incomingBytes[9][64];
+  if (Serial.available() > 0) {
+    while(package_count<9){
+      if (Serial.available() > 0){
+        Serial.readBytes(incomingBytes[package_count],64);
+        package_count++;
+      }
     }
-    memcpy(&controll, &temp, 4);
-        for(size_t i=0;i<4;i++){
-      Serial.print(controll[i]);
-      Serial.print("\n");
-    }
-    Serial.print("\n");
   }
+  if(package_count==9){
+    for(int i=0;i<9;i++){
+      for(int j=0;j<16;j++){
+        byte temp[4]={incomingBytes[i][j*4],incomingBytes[i][j*4+1],incomingBytes[i][j*4+2],incomingBytes[i][j*4+3]};
+        values[i*16+j]=bit_conversion(temp);
+      }
+    }
+    package_count=0;
+    Serial.print("ENDE");
+  }
+  
 
 }
-
-// put function definitions here:
