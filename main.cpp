@@ -1,17 +1,17 @@
 #include <Arduino.h>
-#include <SimpleFOC.h>
-#include <math.h>
-#include <string>
-// put function declarations here:
-int package_count;
 
+#define max_device_count 36
+#define message_space 16
+#define count_target_parameter 4// must be multiple of 4
+#define count_motor_values 4    // must be multiple of 4
+
+float target_values[max_device_count][count_target_parameter];
+byte ByteBuffer[9][64];
 void setup() 
 {
-	SimpleFOCDebug::enable();
 	Serial.begin(115200);
   delay(1000);
   Serial.println("setup");
-  package_count=0;
 }
 
 float bit_conversion(byte bits[4]){
@@ -23,27 +23,60 @@ float bit_conversion(byte bits[4]){
   memcpy(&f, &tmp, 4);
   return f;
 }
-void loop() {
-  float values[144];
-  byte incomingBytes[9][64];
+void send_values_serial(){
+  for(int i=0;i<9;i++){
+    Serial.write(ByteBuffer[i],64);
+  }
+}
+void can_to_bytes(){
+  byte temp[4];
+  int value_count=0;
+  for(int i=0;i<9;i++){
+    for(int j=0;j<16;j++){
+      memcpy(&temp,&target_values[value_count/4][value_count%4],4);
+      ByteBuffer[i][j*4]  =temp[0];
+      ByteBuffer[i][j*4+1]=temp[1];
+      ByteBuffer[i][j*4+2]=temp[2];
+      ByteBuffer[i][j*4+3]=temp[3];
+      value_count++;
+    }
+  }
+}
+void flush_buffer(){
+  for(int i=0;i<9;i++){
+    for(int j=0;j<64;j++){
+      ByteBuffer[i][j]=0;
+    }
+  }
+}
+void get_values_serial(){
   if (Serial.available() > 0) {
+    int package_count=0;
     while(package_count<9){
       if (Serial.available() > 0){
-        Serial.readBytes(incomingBytes[package_count],64);
+        Serial.readBytes(ByteBuffer[package_count],64);
+        Serial.write(package_count);
         package_count++;
       }
     }
-  }
-  if(package_count==9){
+    int value_counter=0;
     for(int i=0;i<9;i++){
       for(int j=0;j<16;j++){
-        byte temp[4]={incomingBytes[i][j*4],incomingBytes[i][j*4+1],incomingBytes[i][j*4+2],incomingBytes[i][j*4+3]};
-        values[i*16+j]=bit_conversion(temp);
+        byte temp[4]={ByteBuffer[i][j*4],ByteBuffer[i][j*4+1],ByteBuffer[i][j*4+2],ByteBuffer[i][j*4+3]};
+        target_values[value_counter/4][value_counter%4]=bit_conversion(temp);
+        value_counter++;
       }
     }
     package_count=0;
-    Serial.print("ENDE");
+    delay(10000);
+    flush_buffer();
+    can_to_bytes();
+    send_values_serial();
   }
-  
+}
+
+
+void loop() {
+  get_values_serial();
 
 }
