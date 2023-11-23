@@ -1,8 +1,7 @@
 import serial
 import struct
 
-ser_mot1 = serial.Serial('COM23', 115200,timeout=None) 
-value = 5.14321
+ser_mot1 = serial.Serial('COM21', 115200,timeout=None) 
 def wrapper(bytearray):
     package=[]
     for i in range(int(len(bytearray)/64)):
@@ -22,12 +21,20 @@ def get_all(serial_connection):
         for i in temp:
             values.append(float(i[0]))
     return values  
-
-ba = bytearray(struct.pack("f", value))
-for i in range(143):
+values=[]
+ba = bytearray()
+for j in range(4):
+    ba.extend(struct.pack("f", 0))
+for i in range(3):
+    temp=float(input())
+    ba.extend(struct.pack("f",temp))
+    temp=float(input())
+    ba.extend(struct.pack("f",temp))
+    for j in range(2):
+        ba.extend(struct.pack("f", 0))
+for i in range(128):
     ba.extend(struct.pack("f", i))
 send_all(wrapper(ba),ser_mot1)
-values=[]
 values=get_all(ser_mot1)
 for i in values:
     print(i)
