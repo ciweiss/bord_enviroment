@@ -13,3 +13,4 @@ s_b=math.sin(beta)
 c_b=math.cos(beta)
 rotation=np.array([[c_a,-s_a,0],[s_a*c_b,c_a*c_b,-s_b],[s_a*s_b,c_a*s_b,c_b]])
 translation=np.array([[2*r_b*c_a],[2*r_b*s_a*c_b],[2*r_b*s_a*c_b]])
+###https://cseweb.ucsd.edu/classes/sp16/cse169-a/slides/CSE169_03.pdf
