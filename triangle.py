@@ -1,16 +1,32 @@
 import numpy as np
-import math
 import matplotlib.pyplot as plt
-r_t=1
-r_b=2
-alpha=30
-beta=60
-alpha=math.radians(alpha)
-beta=math.radians(beta)
-s_a=math.sin(alpha)
-c_a=math.cos(alpha)
-s_b=math.sin(beta)
-c_b=math.cos(beta)
-rotation=np.array([[c_a,-s_a,0],[s_a*c_b,c_a*c_b,-s_b],[s_a*s_b,c_a*s_b,c_b]])
-translation=np.array([[2*r_b*c_a],[2*r_b*s_a*c_b],[2*r_b*s_a*c_b]])
-###https://cseweb.ucsd.edu/classes/sp16/cse169-a/slides/CSE169_03.pdf
+from math import sin, cos
+class joint:
+    def __init__(self, _points):
+        self.points=np.append(np.identity(3),np.array([[1,1,1]]),axis=0)
+        self.points[2][2]=0
+        self.points[0][0]=_points[0][0]
+        self.points[0][1]=_points[0][1]
+        self.points[0][2]=_points[0][2]
+        self.points[1][0]=_points[1][0]
+        self.points[1][1]=_points[1][1]
+        self.points[1][2]=_points[1][2]
+        self.orientation=np.identity(4)
+    def move_to_angle(self, phi, teta):
+        self.orientation[0][0]=1-cos(phi)**2*sin(teta/2)**2
+        self.orientation[0][1]=-sin(2*phi)*sin(teta/2)**2
+        self.orientation[0][2]=sin(teta)*cos(phi)
+        self.orientation[0][3]=0
+        self.orientation[1][0]=-sin(2*phi)*sin(teta/2)**2
+        self.orientation[1][1]=1-2*sin(phi)**2*sin(teta/2)**2
+        self.orientation[1][2]=sin(teta)*sin(phi)
+        self.orientation[1][3]=0
+        self.orientation[2][0]=-sin(teta)*cos(phi)
+        self.orientation[2][1]=-sin(teta)*sin(phi)
+        self.orientation[2][2]=cos(teta)
+        self.orientation[2][3]=0
+
+points=[[0,0,0],[0,0,0],[0,0,0]]
+
+test=joint(points)
+print(test.points)
