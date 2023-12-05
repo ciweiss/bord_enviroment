@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from math import sin, cos
+from math import sin, cos,sqrt
 class joint:
     def __init__(self, _points):
         self.points=np.append(np.identity(3),np.array([[1,1,1]]),axis=0)
@@ -26,7 +26,7 @@ class joint:
         self.orientation[2][2]=cos(teta)
         self.orientation[2][3]=0
 
-points=[[0,0,0],[0,0,0],[0,0,0]]
-
+r=1
+points=[[r,-r/2,-r/2],[0,sqrt(3)/2*r,-sqrt(3)/2*r],[0,0,0]]
 test=joint(points)
 print(test.points)
