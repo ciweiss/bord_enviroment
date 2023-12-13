@@ -29,4 +29,4 @@ class joint:
         temp=np.matmul(self.orientation,self.points)
         for i in range(3):
             values[i]=sqrt((temp[0][i]-self.points[0][i])**2+(temp[1][i]-self.points[1][i])**2+(temp[2][i]-self.points[2][i])**2)
-        return valu
+        return values
