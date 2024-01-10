@@ -67,12 +67,14 @@ class continuum_arm:
         _i=[]
         _j=[]
         _k=[]
+        _l=[]
         for i in range(13):
             for j in range(12*3-i*3):
                 _x.append(self.triangles[i][0,j])
                 _y.append(self.triangles[i][1,j])
                 _z.append(self.triangles[i][2,j])
-        print(_z)
+        for i in range(78*3):
+            _l.append(i/(78*3))
         for i in range(78):
             _i.append(i*3)
             _j.append(i*3+1)
@@ -82,18 +84,18 @@ class continuum_arm:
                 x=_x,
                 y=_y,
                 z=_z,
-                colorbar_title='z',
+                
                 colorscale=[[0, 'gold'],
                             [0.5, 'mediumturquoise'],
                             [1, 'magenta']],
                 # Intensity of each vertex, which will be interpolated and color-coded
-                intensity=[0, 0.33, 0.66, 1],
+                intensity=_l,
                 # i, j and k give the vertices of triangles
                 i=_i,
                 j=_j,
                 k=_k,
                 name='y',
-                showscale=True
+                showscale=False
             )
         ])
         fig.show()
@@ -127,5 +129,5 @@ for i in range(12):
     angles.append([np.pi/12*i,np.pi/72*i])
 print(arm.calc_len())
 arm.move_to_angles(angles)
-###arm.show()
+arm.show()
 
