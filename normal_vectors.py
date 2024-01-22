@@ -6,20 +6,27 @@ from scipy.optimize import root
 import time
 
 def HomMat(phi: float, teta: float,h: float):
+    cp=cos(phi)
+    ct=cos(teta)
+    sp_2=sin(phi*2)
+    sp=sin(phi)
+    st=sin(teta)
+    st_2=sin(teta/2)
     orientation=np.identity(4)
-    orientation[0][0]=1-cos(phi)**2*sin(teta/2)**2
-    orientation[0][1]=-sin(2*phi)*sin(teta/2)**2
-    orientation[0][2]=sin(teta)*cos(phi)
-    orientation[0][3]=h*sin(teta/2)*cos(phi)
-    orientation[1][0]=-sin(2*phi)*sin(teta/2)**2
-    orientation[1][1]=1-2*sin(phi)**2*sin(teta/2)**2
-    orientation[1][2]=sin(teta)*sin(phi)
-    orientation[1][3]=h*sin(teta/2)*sin(phi)
-    orientation[2][0]=-sin(teta)*cos(phi)
-    orientation[2][1]=-sin(teta)*sin(phi)
-    orientation[2][2]=cos(teta)
+    orientation[0][0]=1-cp*cp*st_2*st_2
+    orientation[0][1]=-sp_2*st_2*st_2
+    orientation[0][2]=st*cp
+    orientation[0][3]=h*st_2*cp
+    orientation[1][0]=-sp_2*st_2*st_2
+    orientation[1][1]=1-2*sp**2*st_2*st_2
+    orientation[1][2]=st*sp
+    orientation[1][3]=h*st_2*sp
+    orientation[2][0]=-st*cp
+    orientation[2][1]=-st*sp
+    orientation[2][2]=ct
     orientation[2][3]=h*cos(teta/2)
     return orientation
+
 
 def rotate_triangle(triangle,degree):
     rad=degree/180*np.pi
@@ -169,23 +176,46 @@ class continuum_arm:
                 res=np.matmul(mat,res)
             res=res-target
             ret=np.zeros(24)
-            for i in range(24):
-                if i<=15:
-                    ret[i]=res[i%4,i//4]
+            for i in range(12):
+                ret[i]=res[i>>2,i&3]
             return ret
         sol=np.zeros(24)
-        nsol=root(F, sol, method='lm')
+        nsol=root(F, sol, method='lm', options= {'maxiter':3000})
         angles=[]
         for i in range(12):
             angles.append([nsol.x[i],nsol.x[i+12]])
         return angles
+    
+    def inverse_point_kine(self, target):
+        def F(angles):
+            res=np.zeros(3)
+            for i in range(12):
+                st_2=sin(angles[i+12]/2)
+                cp=cos(angles[i])
+                sp=sin(angles[i])
+                st_2=sin(angles[i+12]/2)
+                res[0]+=self.h*st_2*cp
+                res[1]+=self.h*st_2*sp
+                res[2]+=self.h*cos(angles[i+12]/2)
+            res=res-target
+            ret=np.zeros(24)
+            for i in range(3):
+                ret[i]=res[i]
+            return ret
+        sol=np.zeros(24)
+        nsol=root(F, sol, method='lm', options= {'maxiter':3000})
+        angles=[]
+        for i in range(12):
+            angles.append([nsol.x[i],nsol.x[i+12]])
+        return angles
+        
 r=56.5
 h=107
 r_rolle=9
 arm=continuum_arm(h,r,r_rolle,12.0)
 angles=[]
 for i in range(12):
-    angles.append([np.pi/12*i,np.pi/72*i])
+    angles.append([np.pi/12*i,np.pi/60*i])
 arm.move_to_angles(angles)
 testMat=np.identity(4)
 for i in range(12):
@@ -197,9 +227,9 @@ ti2=time.time_ns()
 arm.move_to_angles(angles)
 _x2,_y2,_z2,_i2,_j2,_k2,_l2=arm.show()
 for i in range(len(_i2)):
-    _i2[i]+=len(_i2)
-    _j2[i]+=len(_i2)
-    _k2[i]+=len(_i2)
+    _i2[i]+=len(_i2)*3
+    _j2[i]+=len(_i2)*3
+    _k2[i]+=len(_i2)*3
 for i in range(len(_l)):
     _l2[i]=1
     _l[i]=0
