@@ -26,8 +26,11 @@ def HomMat(phi: float, teta: float,h: float):
     orientation[2][2]=ct
     orientation[2][3]=h*cos(teta/2)
     return orientation
-
-
+def normalizer(y):
+    x=np.arctan(y)
+    x+=np.pi/2
+    x/=3
+    return x
 def rotate_triangle(triangle,degree):
     rad=degree/180*np.pi
     rotation_matrix=np.matrix([[cos(rad),-sin(rad)],[sin(rad),cos(rad)]])
@@ -91,14 +94,18 @@ class continuum_arm:
         _j=[]
         _k=[]
         _l=[]
-        for i in range(13):
-            for j in range(12*3-i*3):
+        for j in range(12*3):
+                _x.append(self.triangles[0][0,j])
+                _y.append(self.triangles[0][1,j])
+                _z.append(self.triangles[0][2,j])
+        for i in range(1,13):
+            for j in range(12*3-(i-1)*3):
                 _x.append(self.triangles[i][0,j])
                 _y.append(self.triangles[i][1,j])
                 _z.append(self.triangles[i][2,j])
-        for i in range(78*3):
-            _l.append(i/(78*3))
-        for i in range(78):
+        for i in range(90*3):
+            _l.append(i/(90*3))
+        for i in range(90):
             _i.append(i*3)
             _j.append(i*3+1)
             _k.append(i*3+2)
@@ -172,7 +179,8 @@ class continuum_arm:
         def F(angles):
             res=np.identity(4)
             for i in range(12):
-                mat=HomMat(angles[i],angles[i+12],h)
+                teta=normalizer(angles[23-i])
+                mat=HomMat(angles[11-i],teta,h)
                 res=np.matmul(mat,res)
             res=res-target
             ret=np.zeros(24)
@@ -180,35 +188,59 @@ class continuum_arm:
                 ret[i]=res[i>>2,i&3]
             return ret
         sol=np.zeros(24)
-        nsol=root(F, sol, method='lm', options= {'maxiter':3000})
+        for i in range(12,24):
+            sol[i]=-20
+        nsol=root(F, sol, method='lm')
         angles=[]
         for i in range(12):
-            angles.append([nsol.x[i],nsol.x[i+12]])
+            angles.append([nsol.x[i],normalizer(nsol.x[i+12])])
         return angles
     
-    def inverse_point_kine(self, target):
+    def inverse_kinematic2(self,target):
         def F(angles):
-            res=np.zeros(3)
+            res=np.identity(4)
             for i in range(12):
-                st_2=sin(angles[i+12]/2)
-                cp=cos(angles[i])
-                sp=sin(angles[i])
-                st_2=sin(angles[i+12]/2)
-                res[0]+=self.h*st_2*cp
-                res[1]+=self.h*st_2*sp
-                res[2]+=self.h*cos(angles[i+12]/2)
+                teta=normalizer(angles[23-i])
+                mat=HomMat(angles[11-i],teta,h)
+                res=np.matmul(mat,res)
             res=res-target
             ret=np.zeros(24)
-            for i in range(3):
-                ret[i]=res[i]
+            ret[0]=res[0][3]
+            ret[1]=res[1][3]
+            ret[2]=res[2][3]
             return ret
         sol=np.zeros(24)
-        nsol=root(F, sol, method='lm', options= {'maxiter':3000})
+        for i in range(12,24):
+            sol[i]=-20
+        nsol=root(F, sol, method='lm')
         angles=[]
         for i in range(12):
-            angles.append([nsol.x[i],nsol.x[i+12]])
+            angles.append([nsol.x[i],normalizer(nsol.x[i+12])])
         return angles
-        
+    def inverse_kinematic3(self,target,fixed_angles):
+        fixed=np.identity(4)
+        for i in range(6):
+            fixed=np.matmul(fixed,HomMat(fixed_angles[i][0],fixed_angles[i][1],self.h))
+        def F(angles):
+            res=np.identity(4)
+            for i in range(5,-1,-1):
+                teta=normalizer(angles[i+6])
+                mat=HomMat(angles[i],teta,h)
+                res=np.matmul(mat,res)
+            res=np.matmul(fixed,res)
+            res=res-target
+            ret=np.zeros(12)
+            for i in range(12):
+                ret[i]=res[i>>2,i&3]
+            return ret
+        sol=np.zeros(12)
+        nsol=root(F, sol, method='lm')
+        angles=[]
+        for i in range(6):
+            angles.append(fixed_angles[i])
+        for i in range(6):
+            angles.append([nsol.x[i],normalizer(nsol.x[i+6])])
+        return angles
 r=56.5
 h=107
 r_rolle=9
@@ -219,12 +251,21 @@ for i in range(12):
 arm.move_to_angles(angles)
 testMat=np.identity(4)
 for i in range(12):
-    testMat=np.matmul(arm.joints[i].orientation,testMat)
+    testMat=np.matmul(arm.joints[11-i].orientation,testMat)
+print(testMat)
+###print(arm.triangles[12][:,0]/3+arm.triangles[12][:,1]/3+arm.triangles[12][:,2]/3)
 _x,_y,_z,_i,_j,_k,_l=arm.show()
 ti=time.time_ns()
-angles=arm.inverse_kinematic(testMat)
+angles=arm.inverse_kinematic2(testMat)
+angles=arm.inverse_kinematic3(testMat,angles)
 ti2=time.time_ns()
+
 arm.move_to_angles(angles)
+testMat=np.identity(4)
+for i in range(12):
+    testMat=np.matmul(arm.joints[11-i].orientation,testMat)
+print(testMat)
+###print(arm.triangles[12][:,0]/3+arm.triangles[12][:,1]/3+arm.triangles[12][:,2]/3)
 _x2,_y2,_z2,_i2,_j2,_k2,_l2=arm.show()
 for i in range(len(_i2)):
     _i2[i]+=len(_i2)*3
