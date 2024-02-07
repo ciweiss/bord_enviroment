@@ -1,5 +1,5 @@
-import serial
-import struct
+from utility/serial.py import *
+from utility/geometry.py import *
 import numpy as np
 import matplotlib.pyplot as plt
 from math import sin, cos,sqrt
@@ -39,27 +39,6 @@ class joint:
             values[i]=sqrt((temp[0][i]-self.points[0][i])**2+(temp[1][i]-self.points[1][i])**2+(temp[2][i]-self.points[2][i])**2)
         return values
 
-def wrapper(bytearray):
-    package=[]
-    for i in range(int(len(bytearray)/64)):
-        temp=bytearray[i*64:i*64+64]
-        package.append(temp)
-    return package    
-
-def send_all(package, serial_connection):
-    serial_connection.reset_input_buffer
-    for i in range(len(package)):
-        serial_connection.write(package[i])
-        print(serial_connection.read(1))
-
-def get_all(serial_connection):
-    values=[]
-    for i in range(9):
-        temp=serial_connection.read(64)
-        temp=struct.iter_unpack("f",temp)
-        for i in temp:
-            values.append(float(i[0]))
-    return values
 def move_angle(j:joint,phi,teta, ser_mot:serial):
     j.move_to_angle(phi,teta)
     signs=[1,1,1]
