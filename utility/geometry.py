@@ -1,3 +1,6 @@
+from math import sin, cos,sqrt
+import numpy as np
+
 def HomMat(phi: float, teta: float,h: float):
     cp=cos(phi)
     ct=cos(teta)
