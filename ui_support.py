@@ -11,8 +11,12 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter.constants import *
 import numpy as np
-
+from utility.serial import *
+import normal_vectors
+import serial
 import ui
+import struct
+
 
 _debug = True # False to eliminate debug printing from callback functions.
 
@@ -20,37 +24,149 @@ def main(*args):
     '''Main entry point for the application.'''
     global root
     root = tk.Tk()
-    root.protocol( 'WM_DELETE_WINDOW' , root.destroy)
+    root.protocol( 'WM_DELETE_WINDOW' , on_closing)
     # Creates a toplevel widget.
     global _top1, _w1
     global positions
+    global ser_mot, connected, arm, permutation, was_reseted
+    ser_mot=serial.Serial(None, 115200,timeout=None) 
+    connected=False
+    was_reseted=True
     positions =np.zeros(9)
     _top1 = root
     _w1 = ui.Toplevel1(_top1)
     _w1.angle.set(45)
-    _w1.angle.set(15)
+    _w1.com.set(15)
+    _w1.teta1.set(0)
+    _w1.teta2.set(0)
+    _w1.teta3.set(0)
+    _w1.phi1.set(0)
+    _w1.phi2.set(0)
+    _w1.phi3.set(0)
+    r=56.5
+    h=107
+    r_rolle=9
+    arm=normal_vectors.continuum_arm(h,r,r_rolle,12.0)
+    permutation=[6,8,7,0,2,1,4,3,5]
     root.mainloop()
+    
+def on_closing():
+    if connected:
+        ser_mot.close()
+    root.destroy()
 
 def connect(*args):
     comport=int(_w1.com.get())
     connection="COM"+str(comport)
-    print(connection)
+    ser_mot.port=connection
+    ser_mot.open()
+    connected=True
+    print(connection, "connected")
+
+def send_proto():
+    ba=bytearray()
+    for i in range(4):
+        ba.extend(struct.pack("f",0))
+    for i in range(9):
+        ba.extend(struct.pack("f",  positions[i]*np.pi/180.0))
+        ba.extend(struct.pack("f",10))
+        ba.extend(struct.pack("f",0))
+        ba.extend(struct.pack("f",0))
+    for i in range(104):
+        ba.extend(struct.pack("f",0))
+    send_all(wrapper(ba),ser_mot)
+    get_all(ser_mot)
+    
 def moven(*args):
     id=int(args[0])
     deg=int(_w1.angle.get())
-    positions[id]-=deg
-    print(positions[id])
-    
-    sys.stdout.flush()
+    positions[id-1]-=deg
+    send_proto()
 
 def movep(*args):
     id=int(args[0])
     deg=int(_w1.angle.get())
-    positions[id]+=deg
-    print(positions[id])
-    
-    sys.stdout.flush()   
+    positions[id-1]+=deg
+    send_proto()
 
+def moveangle():
+    global was_reseted
+    if was_reseted==False :
+        print("Reset First")
+        return False
+    angles1=[]
+    for i in range(12):
+        angles1.append([0,0])
+    arm.move_to_angles(angles1)
+    temp1=arm.calc_len()
+    angles=[]
+    angles.append([float(_w1.phi1.get())*np.pi/180.0,float(_w1.teta1.get())*np.pi/180.0])
+    angles.append([float(_w1.phi2.get())*np.pi/180.0,float(_w1.teta2.get())*np.pi/180.0])
+    angles.append([float(_w1.phi3.get())*np.pi/180.0,float(_w1.teta3.get())*np.pi/180.0])    
+    for i in range(9):
+        angles.append([0,0])
+    arm.move_to_angles(angles)
+    temp=arm.calc_len()
+    for i in range(36):
+        temp[i]-=temp1[i]
+        temp[i]/=arm.r_rolle
+        
+    print(temp)
+    ba = bytearray()
+    for i in range(4):
+        ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",temp[6]))
+    ba.extend(struct.pack("f",10))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",temp[8]))
+    ba.extend(struct.pack("f",10))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",temp[7]))
+    ba.extend(struct.pack("f",10))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",temp[0]))
+    ba.extend(struct.pack("f",10))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",temp[2]))
+    ba.extend(struct.pack("f",10))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",temp[1]))
+    ba.extend(struct.pack("f",10))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",-temp[4]))
+    ba.extend(struct.pack("f",10))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",-temp[3]))
+    ba.extend(struct.pack("f",10))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",-temp[5]))
+    ba.extend(struct.pack("f",10))
+    ba.extend(struct.pack("f",0))
+    ba.extend(struct.pack("f",0))
+    for i in range(108):
+        ba.extend(struct.pack("f",0))
+    send_all(wrapper(ba),ser_mot)
+    values=get_all(ser_mot)
+    was_reseted=False
+    for i in range(len(values)):
+        if i%4==0:
+            print("Motor",int(i/4+1),":",values[i],values[i+1],values[i+2],values[i+3])
+    return True
+
+def reset():
+    for i in range(9):
+        positions[i]=0
+    send_proto()
+    global was_reseted
+    was_reseted=True
 
 if __name__ == '__main__':
     ui.start_up()
