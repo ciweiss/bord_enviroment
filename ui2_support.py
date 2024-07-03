@@ -14,7 +14,7 @@ import numpy as np
 from utility.serial import *
 import normal_vectors
 import serial
-import ui
+import ui2
 import struct
 
 
@@ -34,7 +34,7 @@ def main(*args):
     was_reseted=True
     positions =np.zeros(36)
     _top1 = root
-    _w1 = ui.Toplevel1(_top1)
+    _w1 = ui2.Toplevel1(_top1)
     _w1.angle.set(45)
     _w1.com.set(20)
     r=56.5
@@ -79,6 +79,7 @@ def movep(*args):
     positions[id-1]+=deg
     send_proto()
 
+
 def reset():
     for i in range(9):
         positions[i]=0
@@ -87,7 +88,7 @@ def reset():
     was_reseted=True
 
 if __name__ == '__main__':
-    ui.start_up()
+    ui2.start_up()
 
 
 
