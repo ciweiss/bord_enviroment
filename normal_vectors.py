@@ -189,7 +189,3 @@ class continuum_arm:
         for i in range(6):
             angles.append([nsol.x[i],normalizer(nsol.x[i+6])])
         return angles
-
-        ])
-fig.show()
-print((ti2-ti)/1000000000)
