@@ -1,4 +1,4 @@
-from utility/geometry.py import *
+from utility.geometry.py import *
 from math import sin, cos,sqrt
 import numpy as np
 import plotly.graph_objects as go
@@ -189,64 +189,7 @@ class continuum_arm:
         for i in range(6):
             angles.append([nsol.x[i],normalizer(nsol.x[i+6])])
         return angles
-r=56.5
-h=107
-r_rolle=9
-arm=continuum_arm(h,r,r_rolle,12.0)
-angles=[]
-for i in range(12):
-    angles.append([np.pi/12*i,np.pi/60*i])
-arm.move_to_angles(angles)
-testMat=np.identity(4)
-for i in range(12):
-    testMat=np.matmul(arm.joints[11-i].orientation,testMat)
-print(testMat)
-###print(arm.triangles[12][:,0]/3+arm.triangles[12][:,1]/3+arm.triangles[12][:,2]/3)
-_x,_y,_z,_i,_j,_k,_l=arm.show()
-ti=time.time_ns()
-angles=arm.inverse_kinematic2(testMat)
-angles=arm.inverse_kinematic3(testMat,angles)
-ti2=time.time_ns()
 
-arm.move_to_angles(angles)
-testMat=np.identity(4)
-for i in range(12):
-    testMat=np.matmul(arm.joints[11-i].orientation,testMat)
-print(testMat)
-###print(arm.triangles[12][:,0]/3+arm.triangles[12][:,1]/3+arm.triangles[12][:,2]/3)
-_x2,_y2,_z2,_i2,_j2,_k2,_l2=arm.show()
-for i in range(len(_i2)):
-    _i2[i]+=len(_i2)*3
-    _j2[i]+=len(_i2)*3
-    _k2[i]+=len(_i2)*3
-for i in range(len(_l)):
-    _l2[i]=1
-    _l[i]=0
-_x=_x+_x2
-_y=_y+_y2
-_z=_z+_z2
-_i=_i+_i2
-_j=_j+_j2
-_k=_k+_k2
-_l=_l+_l2
-fig = go.Figure(data=[
-            go.Mesh3d(
-                x=_x,
-                y=_y,
-                z=_z,
-                
-                colorscale=[[0, 'gold'],
-                            [0.5, 'mediumturquoise'],
-                            [1, 'magenta']],
-                # Intensity of each vertex, which will be interpolated and color-coded
-                intensity=_l,
-                # i, j and k give the vertices of triangles
-                i=_i,
-                j=_j,
-                k=_k,
-                name='y',
-                showscale=False
-            )
         ])
 fig.show()
 print((ti2-ti)/1000000000)
