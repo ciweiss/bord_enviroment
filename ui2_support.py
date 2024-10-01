@@ -28,8 +28,12 @@ def main(*args):
     # Creates a toplevel widget.
     global _top1, _w1
     global positions
-    global ser_mot, connected, arm, permutation, was_reseted
+    global ser_mot, connected, arm, permutation, was_reseted,scales, coms
     ser_mot=serial.Serial(None, 115200,timeout=None) 
+    scales=[]
+    scales.append(serial.Serial(None, 115200,timeout=None))
+    scales.append(serial.Serial(None, 115200,timeout=None))
+    scales.append(serial.Serial(None, 115200,timeout=None))
     connected=False
     was_reseted=True
     positions =np.zeros(36)
@@ -37,6 +41,13 @@ def main(*args):
     _w1 = ui2.Toplevel1(_top1)
     _w1.angle.set(45)
     _w1.com.set(20)
+    coms=[]
+    coms.append(_w1.com_scale1)
+    coms.append(_w1.com_scale2)
+    coms.append(_w1.com_scale3)
+    coms[0].set(1)
+    coms[1].set(2)
+    coms[2].set(3)
     r=56.5
     h=107
     r_rolle=9
@@ -56,7 +67,18 @@ def connect(*args):
     ser_mot.open()
     connected=True
     print(connection, "connected")
-
+def evaluate_scales():
+    print("scales evaluated")
+    root.after(2000, evaluate_scales)  
+def connect_scales(*args):
+    for i in range(3):
+        comport=int(coms[i].get())
+        connection="COM"+str(comport)
+        ###scales[i].port=connection
+        ###scales[i].open()
+        print(connection, "connected")
+    root.after(2000, evaluate_scales) 
+    
 def send_proto():
     ba=bytearray()
     for i in range(36):
