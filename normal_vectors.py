@@ -1,10 +1,11 @@
-from utility.geometry.py import *
+from utility.geometry import *
 from math import sin, cos,sqrt
 import numpy as np
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from scipy.optimize import root
 import time
+import struct
 class joint:
     def __init__(self, h:float):
         self.orientation=np.identity(4)
@@ -18,17 +19,26 @@ class joint:
         self.orientation=HomMat(phi,teta,self.h)
 
 class continuum_arm:
-    def __init__(self,h:float,r:float,r_rolle:float,d:float):
+    def __init__(self,h:float,r:float,r_rolle:float,d:float,index_list):
         self.h=h
         self.r=r
         self.r_rolle=r_rolle
         self.d=d
         self.joints=[]
+        self.index_list=index_list
         for i in range(12):
             self.joints.append(joint(h))
-        self.triangles_ground=generate_triangles(r)
+        self.triangles_ground=generate_triangles(r,index_list)
         self.triangles=[]
         self.triangles.append(self.triangles_ground)
+        temp_list=[]
+        self.motor_list=[]
+        for i in range(12):
+            temp_list.append(index_list[i])
+            temp_list.append(index_list[i]+12)
+            temp_list.append(index_list[i]+24)
+        for i in range(36):
+            self.motor_list.append(temp_list.index(i))
         for i in range(12):
             self.triangles.append(self.triangles[0][:,3*i:])
         for i in range(12,0,-1):
@@ -76,7 +86,7 @@ class continuum_arm:
                 showscale=False
             )
         ])
-        ###fig.show()
+        fig.show()
         return  _x, _y, _z, _i,_j,_k,_l
            
     def show_arrows(self):
@@ -189,3 +199,22 @@ class continuum_arm:
         for i in range(6):
             angles.append([nsol.x[i],normalizer(nsol.x[i+6])])
         return angles
+    def send_len(self):
+        list_len=self.calc_len()
+        for i in range(12):
+            list_len[35-i*3]-=(i+1)*self.h
+            list_len[34-i*3]-=(i+1)*self.h
+            list_len[33-i*3]-=(i+1)*self.h
+        values=np.zeros(36)
+        for i in range(36):
+            values[i]=list_len[self.motor_list[i]]/self.r_rolle
+            if i % 3==2:
+                values[i]*=-1
+        ba=bytearray()
+        for i in range(36):
+            ba.extend(struct.pack("f",  values[i]))
+            ba.extend(struct.pack("f",10))
+            ba.extend(struct.pack("f",0))
+            ba.extend(struct.pack("f",0))
+        return ba
+

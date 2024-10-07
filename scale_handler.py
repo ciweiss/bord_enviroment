@@ -23,10 +23,12 @@ def load_values(filename):
 def scale_connect(port):
     values=[]
     ser_scale = serial.Serial(port, 57600,timeout=None)
-    ba=bytearray(24)
-    time.sleep(5)
+    ba=bytearray(48)
+    ba2=bytearray(1)
+    time.sleep(1)
     ser_scale.reset_input_buffer()
-    for i in range(100):
+    for i in range(3):
+        ser_scale.write(ba2)
         ser_scale.readinto(ba)
         temp=struct.iter_unpack("f",ba)
         for i in temp:
@@ -60,5 +62,6 @@ def plotthis():
     plt.plot(X,Y6,label="6")
     plt.legend()
     plt.show()
-save_values("scales.sav",scale_connect("COM14"))
-plotthis()
+###save_values("scales.sav",scale_connect("COM14"))
+###plotthis()
+print(scale_connect("COM5"))

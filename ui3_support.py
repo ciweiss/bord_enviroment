@@ -32,12 +32,10 @@ def main(*args):
     positions =np.zeros(36)
     _top1 = root
     _w1 = ui3.Toplevel1(_top1)
-    _w1.angle.set(45)
-    _w1.com.set(20)
     r=56.5
     h=107
     r_rolle=9
-    arm=normal_vectors.continuum_arm(h,r,r_rolle,12.0)
+    arm=normal_vectors.continuum_arm(h,r,r_rolle,12.0,[1,10,7,4,8,5,2,11,9,6,3,0])
     permutation=[6,8,7,0,2,1,4,3,5]
     root.mainloop()
 def on_closing():

@@ -36,9 +36,9 @@ def main(*args):
     ser_mot=serial.Serial(None, 115200,timeout=None) 
     scales=[]
     entries=[]
-    scales.append(serial.Serial(None, 115200,timeout=None))
-    scales.append(serial.Serial(None, 115200,timeout=None))
-    scales.append(serial.Serial(None, 115200,timeout=None))
+    scales.append(serial.Serial(None, 57600,timeout=None))
+    scales.append(serial.Serial(None, 57600,timeout=None))
+    scales.append(serial.Serial(None, 57600,timeout=None))
     entries.append(_w1.s1)
     entries.append(_w1.s2)
     entries.append(_w1.s3)
@@ -119,13 +119,13 @@ def main(*args):
     coms.append(_w1.com_scale1)
     coms.append(_w1.com_scale2)
     coms.append(_w1.com_scale3)
-    coms[0].set(1)
-    coms[1].set(2)
-    coms[2].set(3)
+    coms[0].set(5)
+    coms[1].set(4)
+    coms[2].set(6)
     r=56.5
     h=107
     r_rolle=9
-    arm=normal_vectors.continuum_arm(h,r,r_rolle,12.0)
+    arm=normal_vectors.continuum_arm(h,r,r_rolle,12.0,[1,10,7,4,8,5,2,11,9,6,3,0])
     permutation=[6,8,7,0,2,1,4,3,5]
     root.mainloop()
     
@@ -142,24 +142,32 @@ def connect(*args):
     connected=True
     print(connection, "connected")
 def evaluate_scales():
-    print("scales evaluated")
     stop=False
-    for i in range(36):
-        value=random.random()
-        entries[i].set(value)
-        if value>0.98 :
-            stop=True
-            entries[i+36].configure(bg="red")
+    for i in range(3):
+        values=[]
+        ba=bytearray(48)
+        ba2=bytearray(1)
+        scales[i].reset_input_buffer()
+        scales[i].write(ba2)
+        scales[i].readinto(ba)
+        temp=struct.iter_unpack("f",ba)
+        for k in temp:
+            values.append(k[0]/1000)
+        for j in range(12):
+            entries[i*12+j].set(values[j])
+            if values[j]>1000 :
+                stop=True
+                entries[i*12+j+36].configure(bg="red")
     if not stop:
-        root.after(2000, evaluate_scales)  
+        root.after(100, evaluate_scales)  
 def connect_scales(*args):
     for i in range(3):
         comport=int(coms[i].get())
         connection="COM"+str(comport)
-        ###scales[i].port=connection
-        ###scales[i].open()
+        scales[i].port=connection
+        scales[i].open()
         print(connection, "connected")
-    root.after(2000, evaluate_scales) 
+    root.after(30000, evaluate_scales) 
     
 def send_proto():
     ba=bytearray()
