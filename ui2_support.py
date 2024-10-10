@@ -25,14 +25,14 @@ def main(*args):
     global root
     root = tk.Tk()
     root.protocol( 'WM_DELETE_WINDOW' , on_closing)
-    # Creates a toplevel widget.
     global _top1, _w1
     global positions
-    global ser_mot, connected, arm, permutation, was_reseted,scales, coms,entries
+    global ser_mot, connected, arm, permutation,scales, coms,entries, angles
+    angles=[]
     _top1 = root
     _w1 = ui2.Toplevel1(_top1)
     _w1.angle.set(45)
-    _w1.com.set(20)
+    _w1.com.set(10)
     ser_mot=serial.Serial(None, 115200,timeout=None) 
     scales=[]
     entries=[]
@@ -111,17 +111,30 @@ def main(*args):
     entries.append(_w1.Entry37)
     entries.append(_w1.Entry38)
     entries.append(_w1.Entry39)
+    angles.append([_w1.phi1,_w1.teta1])
+    angles.append([_w1.phi2,_w1.teta2])
+    angles.append([_w1.phi3,_w1.teta3])
+    angles.append([_w1.phi4,_w1.teta4])
+    angles.append([_w1.phi5,_w1.teta5])
+    angles.append([_w1.phi6,_w1.teta6])
+    angles.append([_w1.phi7,_w1.teta7])
+    angles.append([_w1.phi8,_w1.teta8])
+    angles.append([_w1.phi9,_w1.teta9])
+    angles.append([_w1.phi10,_w1.teta10])
+    angles.append([_w1.phi11,_w1.teta11])
+    angles.append([_w1.phi12,_w1.teta12])
     connected=False
-    was_reseted=True
     positions =np.zeros(36)
-
+    for i in range(12):
+        angles[i][0].set(0)
+        angles[i][1].set(0)
     coms=[]
     coms.append(_w1.com_scale1)
     coms.append(_w1.com_scale2)
     coms.append(_w1.com_scale3)
     coms[0].set(5)
-    coms[1].set(4)
-    coms[2].set(6)
+    coms[1].set(13)
+    coms[2].set(12)
     r=56.5
     h=107
     r_rolle=9
@@ -172,7 +185,8 @@ def connect_scales(*args):
 def send_proto():
     ba=bytearray()
     for i in range(36):
-        ba.extend(struct.pack("f",  positions[i]*np.pi/180.0))
+        ba.extend(struct.pack("f",  arm.positions_reset[i]))
+        arm.positions[i]=arm.positions_reset[i]
         ba.extend(struct.pack("f",10))
         ba.extend(struct.pack("f",0))
         ba.extend(struct.pack("f",0))
@@ -182,22 +196,33 @@ def send_proto():
 def moven(*args):
     id=int(args[0])
     deg=int(_w1.angle.get())
-    positions[id-1]-=deg
+    arm.positions_reset[id-1]-=deg*np.pi/180.0
     send_proto()
 
 def movep(*args):
     id=int(args[0])
     deg=int(_w1.angle.get())
-    positions[id-1]+=deg
+    arm.positions_reset[id-1]+=deg*np.pi/180.0
     send_proto()
+    
+def send_angle():
+    listing=[]
+    factor=np.pi/180
+    for i in range(12):
+        listing.append([int(angles[i][0].get()),int(angles[i][1].get())])
+        
+    flag=True
+    for entry in listing:
+        if entry[1]>40 or entry[1]<0:
+            flag=False
+        entry[0]*=factor
+        entry[1]*=factor
+    if flag:
+        arm.move_to_angles(listing)
+        send_all(wrapper(arm.send_len()),ser_mot)
+        get_all(ser_mot)
+        arm.show_arrows()     
 
-
-def reset():
-    for i in range(9):
-        positions[i]=0
-    send_proto()
-    global was_reseted
-    was_reseted=True
 
 if __name__ == '__main__':
     ui2.start_up()

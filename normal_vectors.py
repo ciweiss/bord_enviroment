@@ -26,6 +26,7 @@ class continuum_arm:
         self.d=d
         self.joints=[]
         self.index_list=index_list
+        self.len0=np.zeros(36)
         for i in range(12):
             self.joints.append(joint(h))
         self.triangles_ground=generate_triangles(r,index_list)
@@ -33,10 +34,14 @@ class continuum_arm:
         self.triangles.append(self.triangles_ground)
         temp_list=[]
         self.motor_list=[]
+        self.positions_reset=np.zeros(36)
+        self.positions=np.zeros(36)
         for i in range(12):
+            
             temp_list.append(index_list[i])
             temp_list.append(index_list[i]+12)
             temp_list.append(index_list[i]+24)
+            
         for i in range(36):
             self.motor_list.append(temp_list.index(i))
         for i in range(12):
@@ -44,6 +49,7 @@ class continuum_arm:
         for i in range(12,0,-1):
             for j in range(12,i-1,-1):
                 self.triangles[j]=np.matmul(self.joints[i-1].orientation,self.triangles[j])
+        self.len0=self.calc_len()
     def show(self):
         _x=[]
         _y=[]
@@ -201,15 +207,15 @@ class continuum_arm:
         return angles
     def send_len(self):
         list_len=self.calc_len()
-        for i in range(12):
-            list_len[35-i*3]-=(i+1)*self.h
-            list_len[34-i*3]-=(i+1)*self.h
-            list_len[33-i*3]-=(i+1)*self.h
+        for i in range(36):
+            list_len[i]  -=self.len0[i]
         values=np.zeros(36)
         for i in range(36):
-            values[i]=list_len[self.motor_list[i]]/self.r_rolle
+            values[i]=list_len[self.motor_list[i]]/self.r_rolle  
             if i % 3==2:
                 values[i]*=-1
+            values[i]+=self.positions[i]
+            self.positions[i]=values[i]
         ba=bytearray()
         for i in range(36):
             ba.extend(struct.pack("f",  values[i]))
