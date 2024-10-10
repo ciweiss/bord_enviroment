@@ -36,13 +36,31 @@ def generate_triangles(r):
     triangle=np.zeros((2,3))
     triangles=np.zeros((2,3))
     triangle[0]=[r,-r/2,-r/2]
+    triangle[1]=[0,-sqrt(3)/2*r,sqrt(3)/2*r]
+    triangles=triangle
+    for i in range(1,12):
+        triangles=np.append(triangles,rotate_triangle(triangle,-10*i),axis=1)
+    triangles_3d=np.append(triangles,np.zeros((1,12*3)),axis=0)
+    triangles_3d=np.append(triangles_3d,np.ones((1,12*3)),axis=0)
+    return triangles_3d
+
+def generate_triangles(r,index_list):
+    triangle=np.zeros((2,3))
+    triangles=np.zeros((2,3))
+    triangle[0]=[r,-r/2,-r/2]
     triangle[1]=[0,sqrt(3)/2*r,-sqrt(3)/2*r]
     triangles=triangle
     for i in range(1,12):
         triangles=np.append(triangles,rotate_triangle(triangle,10*i),axis=1)
     triangles_3d=np.append(triangles,np.zeros((1,12*3)),axis=0)
     triangles_3d=np.append(triangles_3d,np.ones((1,12*3)),axis=0)
-    return triangles_3d
+    triangles_perm=np.zeros((4,36))
+
+    for i in range(12):
+        triangles_perm[:,i*3]   = triangles_3d[:,index_list[i]*3].flatten()
+        triangles_perm[:,i*3+1] = triangles_3d[:,index_list[i]*3+1].flatten()
+        triangles_perm[:,i*3+2] = triangles_3d[:,index_list[i]*3+2].flatten()
+    return triangles_perm
 
 def calc_dist_matrix(mat1,mat2):
     ###calc distance for n lines stored as 2 3xn matrices or as 4xn matrices
