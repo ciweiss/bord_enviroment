@@ -133,13 +133,12 @@ def main(*args):
     coms.append(_w1.com_scale2)
     coms.append(_w1.com_scale3)
     coms[0].set(5)
-    coms[1].set(13)
-    coms[2].set(12)
+    coms[1].set(16)
+    coms[2].set(15)
     r=56.5
     h=107
     r_rolle=9
-    arm=normal_vectors.continuum_arm(h,r,r_rolle,12.0,[1,10,7,4,8,5,2,11,9,6,3,0])
-    permutation=[6,8,7,0,2,1,4,3,5]
+    arm=normal_vectors.continuum_arm(h,r,r_rolle,12.0,[0,9,6,3,8,5,2,11,10,7,4,1],[11,0,6,10,3,5,9,2,4,8,1,7])
     root.mainloop()
     
 def on_closing():
@@ -171,8 +170,8 @@ def evaluate_scales():
             if values[j]>1000 :
                 stop=True
                 entries[i*12+j+36].configure(bg="red")
-    if not stop:
-        root.after(100, evaluate_scales)  
+    ###if not stop:
+    root.after(100, evaluate_scales)  
 def connect_scales(*args):
     for i in range(3):
         comport=int(coms[i].get())
@@ -180,14 +179,14 @@ def connect_scales(*args):
         scales[i].port=connection
         scales[i].open()
         print(connection, "connected")
-    root.after(30000, evaluate_scales) 
+    root.after(20000, evaluate_scales) 
     
 def send_proto():
     ba=bytearray()
     for i in range(36):
         ba.extend(struct.pack("f",  arm.positions_reset[i]))
         arm.positions[i]=arm.positions_reset[i]
-        ba.extend(struct.pack("f",10))
+        ba.extend(struct.pack("f",5))
         ba.extend(struct.pack("f",0))
         ba.extend(struct.pack("f",0))
     send_all(wrapper(ba),ser_mot)
@@ -222,7 +221,6 @@ def send_angle():
         send_all(wrapper(arm.send_len()),ser_mot)
         get_all(ser_mot)
         arm.show_arrows()     
-
 
 if __name__ == '__main__':
     ui2.start_up()

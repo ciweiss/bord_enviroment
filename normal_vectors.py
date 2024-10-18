@@ -19,24 +19,33 @@ class joint:
         self.orientation=HomMat(phi,teta,self.h)
 
 class continuum_arm:
-    def __init__(self,h:float,r:float,r_rolle:float,d:float,index_list):
+    def __init__(self,h:float,r:float,r_rolle:float,d:float,index_height,index_round):
+        """
+            h:          height of a joint;
+            r:          radius of the discs of a joint
+            d:          height of a disc( not in use )
+            r_rolle:    radius of a roll
+            index_heigth: the ith entry in this list is the number of 10 degree rotations to get from the triangle of the highest joint to the triangle of the (13-i)th joint
+            index_round: the ith entry gives the number to which joint the ith motor belongs counting from the top.(so when the list starts with a 8, the 1. motor would belong the the 8th Joint from the Top)      
+        """
         self.h=h
         self.r=r
         self.r_rolle=r_rolle
         self.d=d
         self.joints=[]
-        self.index_list=index_list
+        self.index_height=index_height
+        self.index_round=index_round
         for i in range(12):
             self.joints.append(joint(h))
-        self.triangles_ground=generate_triangles(r,index_list)
+        self.triangles_ground=generate_triangles(r,self.index_height)
         self.triangles=[]
         self.triangles.append(self.triangles_ground)
-
+        self.positions_reset=np.zeros(36)
+        self.positions=np.zeros(36)
         self.motor_list=[]
-        for i in range(12):
-            self.motor_list.append(index_list.index(i))
-            self.motor_list.append(index_list.index(i)+12)
-            self.motor_list.append(index_list.index(i)+24)
+        for j in range(3):
+            for i in range(12):
+                self.motor_list.append(self.index_round[i]*3+j)
         for i in range(12):
             self.triangles.append(self.triangles[0][:,:(36-3*i)])
         for i in range(12,0,-1):
@@ -209,10 +218,12 @@ class continuum_arm:
             values[i]=list_len[self.motor_list[i]]/self.r_rolle
             if i % 3==2:
                 values[i]*=-1
+            values[i]+=self.positions[i]
+            self.positions[i]=values[i]
         ba=bytearray()
         for i in range(36):
             ba.extend(struct.pack("f",  values[i]))
-            ba.extend(struct.pack("f",10))
+            ba.extend(struct.pack("f",5))
             ba.extend(struct.pack("f",0))
             ba.extend(struct.pack("f",0))
         return ba
